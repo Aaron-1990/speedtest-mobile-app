@@ -1,45 +1,47 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect } from 'react';
+import { Platform, PermissionsAndroid, Alert } from 'react-native';
+import HomeScreen from './src/screens/HomeScreen';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+const requestAndroidPermissions = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return true;
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  try {
+    const permissions = [
+      PermissionsAndroid.PERMISSIONS.ACCESS_NETWORK_STATE,
+      PermissionsAndroid.PERMISSIONS.INTERNET,
+    ];
 
-  return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
+    const results = await PermissionsAndroid.requestMultiple(permissions);
+    
+    const allGranted = Object.values(results).every(
+      result => result === PermissionsAndroid.RESULTS.GRANTED
+    );
 
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
+    if (!allGranted) {
+      Alert.alert(
+        'Permissions Required',
+        'Network permissions are required for speed testing functionality.',
+        [{ text: 'OK' }]
+      );
+      return false;
+    }
 
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
+    return true;
+  } catch (error) {
+    console.warn('Error requesting permissions:', error);
+    return false;
+  }
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+const App: React.FC = () => {
+  useEffect(() => {
+    const initializeApp = async () => {
+      await requestAndroidPermissions();
+    };
+    initializeApp();
+  }, []);
+
+  return <HomeScreen />;
+};
 
 export default App;
